@@ -1,0 +1,47 @@
+version: "3.9"
+
+services:
+  db:
+    image: mysql:8
+    container_name: ems_mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: akhil19
+      MYSQL_DATABASE: ems_db
+      MYSQL_ROOT_HOST: "%"
+    # For LOCAL development, if you want to connect with MySQL Workbench/DBeaver,
+    # uncomment the line below:
+    # ports:
+    #   - "3307:3306"  # host:container
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-pakhil19"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    volumes:
+      - mysql-data:/var/lib/mysql   # persist DB data
+
+  backend:
+    build: ./backend
+    container_name: ems_backend
+    depends_on:
+      db:
+        condition: service_healthy
+    # For local dev & quick testing, exposing 8080 is fine:
+    ports:
+      - "8080:8080"  # http://localhost:8080
+    # No DB-related env vars here → everything comes from application.properties
+
+  frontend:
+    build: ./frontend
+    container_name: ems_frontend
+    # For local dev:
+    ports:
+      - "3000:80"   # http://localhost:3000
+    # For AWS, change to:
+    # ports:
+    #   - "80:80"   # http://EC2_PUBLIC_IP/
+    depends_on:
+      - backend
+
+volumes:
+  mysql-data:

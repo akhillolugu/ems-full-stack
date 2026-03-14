@@ -5,20 +5,17 @@ function App() {
   const [employees, setEmployees] = useState([]);
   const [form, setForm] = useState({ name: "", email: "", role: "" });
   const [editId, setEditId] = useState(null);
+  const [showModal, setShowModal] = useState(false);
 
-  // API URL from .env with fallback
-  const API =
-    "https://ems-backend-0ks4.onrender.com/api/employees" ||
-    "http://localhost:8080/api/employees";
+  const API = "https://ems-backend-0ks4.onrender.com/api/employees";
 
-  // Fetch employees
   const loadEmployees = async () => {
     try {
       const res = await fetch(API);
       const data = await res.json();
       setEmployees(data);
-    } catch (error) {
-      console.error("Error fetching employees:", error);
+    } catch (err) {
+      console.error("Error fetching employees", err);
     }
   };
 
@@ -26,50 +23,61 @@ function App() {
     loadEmployees();
   }, []);
 
-  // Handle form change
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  // Add or Update employee
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     try {
-      const method = editId ? "PUT" : "POST";
-      const url = editId ? `${API}/${editId}` : API;
-
-      await fetch(url, {
-        method: method,
+      await fetch(API, {
+        method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),
       });
 
       setForm({ name: "", email: "", role: "" });
-      setEditId(null);
       loadEmployees();
-    } catch (error) {
-      console.error("Error saving employee:", error);
+    } catch (err) {
+      console.error("Error adding employee", err);
     }
   };
 
-  // Edit employee
-  const editEmployee = (emp) => {
+  const openEditModal = (emp) => {
     setForm({
       name: emp.name,
       email: emp.email,
       role: emp.role,
     });
     setEditId(emp.id);
+    setShowModal(true);
   };
 
-  // Delete employee
+  const updateEmployee = async () => {
+    try {
+      await fetch(`${API}/${editId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+
+      setShowModal(false);
+      setEditId(null);
+      setForm({ name: "", email: "", role: "" });
+
+      loadEmployees();
+    } catch (err) {
+      console.error("Error updating employee", err);
+    }
+  };
+
   const deleteEmployee = async (id) => {
     try {
       await fetch(`${API}/${id}`, { method: "DELETE" });
       loadEmployees();
-    } catch (error) {
-      console.error("Error deleting employee:", error);
+    } catch (err) {
+      console.error("Error deleting employee", err);
     }
   };
 
@@ -77,6 +85,7 @@ function App() {
     <div className="container">
       <h1>Employee Management System</h1>
 
+      {/* Add Employee */}
       <form className="form" onSubmit={handleSubmit}>
         <input
           type="text"
@@ -105,11 +114,10 @@ function App() {
           required
         />
 
-        <button type="submit">
-          {editId ? "Update Employee" : "Add Employee"}
-        </button>
+        <button type="submit">Add Employee</button>
       </form>
 
+      {/* Employee Table */}
       <table>
         <thead>
           <tr>
@@ -122,36 +130,74 @@ function App() {
         </thead>
 
         <tbody>
-          {employees.length === 0 ? (
-            <tr>
-              <td colSpan="5">No employees found</td>
+          {employees.map((emp) => (
+            <tr key={emp.id}>
+              <td>{emp.id}</td>
+              <td>{emp.name}</td>
+              <td>{emp.email}</td>
+              <td>{emp.role}</td>
+              <td>
+                <button
+                  className="edit"
+                  onClick={() => openEditModal(emp)}
+                >
+                  Edit
+                </button>
+
+                <button
+                  className="delete"
+                  onClick={() => deleteEmployee(emp.id)}
+                >
+                  Delete
+                </button>
+              </td>
             </tr>
-          ) : (
-            employees.map((e) => (
-              <tr key={e.id}>
-                <td>{e.id}</td>
-                <td>{e.name}</td>
-                <td>{e.email}</td>
-                <td>{e.role}</td>
-                <td>
-                  <button
-                    className="edit"
-                    onClick={() => editEmployee(e)}
-                  >
-                    Edit
-                  </button>
-                  <button
-                    className="delete"
-                    onClick={() => deleteEmployee(e.id)}
-                  >
-                    Delete
-                  </button>
-                </td>
-              </tr>
-            ))
-          )}
+          ))}
         </tbody>
       </table>
+
+      {/* EDIT POPUP */}
+      {showModal && (
+        <div className="modal">
+          <div className="modal-content">
+            <h2>Edit Employee</h2>
+
+            <input
+              type="text"
+              name="name"
+              value={form.name}
+              onChange={handleChange}
+            />
+
+            <input
+              type="email"
+              name="email"
+              value={form.email}
+              onChange={handleChange}
+            />
+
+            <input
+              type="text"
+              name="role"
+              value={form.role}
+              onChange={handleChange}
+            />
+
+            <div className="modal-buttons">
+              <button className="update" onClick={updateEmployee}>
+                Update
+              </button>
+
+              <button
+                className="cancel"
+                onClick={() => setShowModal(false)}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

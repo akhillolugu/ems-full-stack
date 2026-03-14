@@ -45,4 +45,8 @@ public class EmployeeController {
     public String delete(@PathVariable Long id) {
         return service.delete(id) ? "Deleted Successfully" : "Employee Not Found";
     }
+    @GetMapping("/test")
+    public String test(){
+        return "API working";
+    }
 }

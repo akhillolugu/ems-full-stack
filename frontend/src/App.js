@@ -8,7 +8,7 @@ function App() {
 
   // API URL from .env with fallback
   const API =
-    process.env.REACT_APP_API_URL ||
+    "https://ems-backend-0ks4.onrender.com/api/employees" ||
     "http://localhost:8080/api/employees";
 
   // Fetch employees

@@ -6,52 +6,71 @@ function App() {
   const [form, setForm] = useState({ name: "", email: "", role: "" });
   const [editId, setEditId] = useState(null);
 
-  const API = "http://localhost:8080/api/employees";
+  // API URL from .env with fallback
+  const API =
+    process.env.REACT_APP_API_URL ||
+    "http://localhost:8080/api/employees";
 
   // Fetch employees
   const loadEmployees = async () => {
-    const res = await fetch(API);
-    const data = await res.json();
-    setEmployees(data);
+    try {
+      const res = await fetch(API);
+      const data = await res.json();
+      setEmployees(data);
+    } catch (error) {
+      console.error("Error fetching employees:", error);
+    }
   };
 
   useEffect(() => {
     loadEmployees();
   }, []);
 
-  // Handle form
+  // Handle form change
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  // Add or Update
+  // Add or Update employee
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const method = editId ? "PUT" : "POST";
-    const url = editId ? `${API}/${editId}` : API;
+    try {
+      const method = editId ? "PUT" : "POST";
+      const url = editId ? `${API}/${editId}` : API;
 
-    await fetch(url, {
-      method: method,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
-    });
+      await fetch(url, {
+        method: method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
 
-    setForm({ name: "", email: "", role: "" });
-    setEditId(null);
-    loadEmployees();
+      setForm({ name: "", email: "", role: "" });
+      setEditId(null);
+      loadEmployees();
+    } catch (error) {
+      console.error("Error saving employee:", error);
+    }
   };
 
   // Edit employee
   const editEmployee = (emp) => {
-    setForm(emp);
+    setForm({
+      name: emp.name,
+      email: emp.email,
+      role: emp.role,
+    });
     setEditId(emp.id);
   };
 
   // Delete employee
   const deleteEmployee = async (id) => {
-    await fetch(`${API}/${id}`, { method: "DELETE" });
-    loadEmployees();
+    try {
+      await fetch(`${API}/${id}`, { method: "DELETE" });
+      loadEmployees();
+    } catch (error) {
+      console.error("Error deleting employee:", error);
+    }
   };
 
   return (
@@ -103,18 +122,34 @@ function App() {
         </thead>
 
         <tbody>
-          {employees.map((e) => (
-            <tr key={e.id}>
-              <td>{e.id}</td>
-              <td>{e.name}</td>
-              <td>{e.email}</td>
-              <td>{e.role}</td>
-              <td>
-                <button className="edit" onClick={() => editEmployee(e)}>Edit</button>
-                <button className="delete" onClick={() => deleteEmployee(e.id)}>Delete</button>
-              </td>
+          {employees.length === 0 ? (
+            <tr>
+              <td colSpan="5">No employees found</td>
             </tr>
-          ))}
+          ) : (
+            employees.map((e) => (
+              <tr key={e.id}>
+                <td>{e.id}</td>
+                <td>{e.name}</td>
+                <td>{e.email}</td>
+                <td>{e.role}</td>
+                <td>
+                  <button
+                    className="edit"
+                    onClick={() => editEmployee(e)}
+                  >
+                    Edit
+                  </button>
+                  <button
+                    className="delete"
+                    onClick={() => deleteEmployee(e.id)}
+                  >
+                    Delete
+                  </button>
+                </td>
+              </tr>
+            ))
+          )}
         </tbody>
       </table>
     </div>
